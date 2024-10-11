@@ -1,4 +1,4 @@
-package me.unidok.jmccodespace.command
+package me.unidok.jmccodespace.command.node
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -23,7 +23,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 object SearchNode {
-    private lateinit var searchCache: Array<CodeBlock>
+    private lateinit var searchCache: List<CodeBlock>
     private var maxPage = 0
 
     fun apply(command: ClientCommand) {
@@ -99,23 +99,17 @@ object SearchNode {
         }
         val begin = (page - 1) * 9
         val end = min(page * 9, size)
-        val blocks = searchCache.toList().subList(begin, end)
-        val maxWidth = blocks.maxOf { textRenderer.getWidth(it.name) }
-        var n = 0
+        val blocks = searchCache.subList(begin, end)
+        var n = begin
         for (block in blocks) {
             val name = block.name
-            val delta = maxWidth - textRenderer.getWidth(name)
             val pos = block.pos
             val x = pos.x
             val y = pos.y
             val z = pos.z + 1
-            message += Text.empty() +
-                    Text.literal("${++n + begin}. ").withColor(JustColor.GRAY) +
-                    Text.literal(name) +
-                    Text.literal(' '.repeat(delta / spaceWidth)) +
-                    Text.literal('\u200C'.repeat(delta % spaceWidth)).formatted(Formatting.BOLD) +
-                    Text.literal("   ($x, $y, $z)\n")
-                        .withColor(0xA6FF6E)
+            message += (Text.empty() +
+                    Text.literal("${++n}. ").withColor(JustColor.GRAY) +
+                    Text.literal(name + '\n'))
                         .hoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Нажмите, чтобы телепортироваться").withColor(JustColor.DARK_GRAY))
                         .clickEvent(ClickEvent.Action.RUN_COMMAND, "/editor tp $x $y $z")
         }

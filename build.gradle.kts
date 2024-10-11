@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "me.unidok"
-version = "1.1"
+version = "1.1.1"
 
 
 repositories {

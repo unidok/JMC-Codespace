@@ -7,7 +7,12 @@ import com.unidok.fabricscheduler.task.TimerTask
 import com.unidok.fabricscheduler.task.WhenTask
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import me.unidok.jmccodespace.command.SaveNode.stop
+import me.unidok.jmccodespace.command.node.ClearNode
+import me.unidok.jmccodespace.command.node.ConfigNode
+import me.unidok.jmccodespace.command.node.SaveNode
+import me.unidok.jmccodespace.command.node.SaveNode.stop
+import me.unidok.jmccodespace.command.node.SavedCodesNode
+import me.unidok.jmccodespace.command.node.SearchNode
 import me.unidok.jmccodespace.util.*
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.network.ClientPlayerEntity

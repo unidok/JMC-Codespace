@@ -22,7 +22,7 @@ object Codespace {
                 client.world!!.registryKey.value.path.endsWith("creativeplus_editor")
     }
 
-    fun search(input: String): Array<CodeBlock> {
+    fun search(input: String): List<CodeBlock> {
         val client = MinecraftClient.getInstance()
         val player = client.player!!
         val world = player.world
@@ -31,10 +31,11 @@ object Codespace {
             for ((pos, block) in world.getChunk(x, y).blockEntities) {
                 if (block !is SignBlockEntity) continue
                 val messages = block.frontText.getMessages(false)
-                val name = SignTranslator.getFullName(messages[0].string) + "::" + SignTranslator.getFullName(messages[1].string)
+                val action = SignTranslator.getFullName(messages[1].string)
+                val name = SignTranslator.getFullName(messages[0].string) + if (action == "...") "" else "::$action"
                 if (name.contains(input, true)) founded.add(CodeBlock(pos, name))
             }
         }
-        return founded.toTypedArray()
+        return founded
     }
 }

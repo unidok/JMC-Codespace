@@ -1,4 +1,4 @@
-package me.unidok.jmccodespace.command
+package me.unidok.jmccodespace.command.node
 
 import com.unidok.clientcommandextensions.ClientCommand
 import com.unidok.clientcommandextensions.execute

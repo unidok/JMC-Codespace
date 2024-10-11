@@ -1,4 +1,4 @@
-package me.unidok.jmccodespace.command
+package me.unidok.jmccodespace.command.node
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.unidok.clientcommandextensions.ClientCommand

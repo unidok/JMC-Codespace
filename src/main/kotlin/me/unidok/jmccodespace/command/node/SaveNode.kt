@@ -1,4 +1,4 @@
-package me.unidok.jmccodespace.command
+package me.unidok.jmccodespace.command.node
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.unidok.clientcommandextensions.ClientCommand
@@ -41,7 +41,7 @@ object SaveNode {
             literal("file") {
                 argument("name", StringArgumentType.greedyString()) {
                     execute {
-                        if (Codespace.playerInEditor()) {
+                        if (!Codespace.playerInEditor()) {
                             source.sendFeedback(Text.literal("Вы не находитесь в мире разработки").formatted(Formatting.RED))
                             return@execute
                         }
@@ -49,7 +49,7 @@ object SaveNode {
                     }
                 }
                 execute {
-                    if (Codespace.playerInEditor()) {
+                    if (!Codespace.playerInEditor()) {
                         source.sendFeedback(Text.literal("Вы не находитесь в мире разработки").formatted(Formatting.RED))
                         return@execute
                     }
