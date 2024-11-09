@@ -1,28 +1,29 @@
 package me.unidok.jmccodespace.command.node
 
-import com.unidok.clientcommandextensions.ClientCommand
-import com.unidok.clientcommandextensions.execute
-import com.unidok.clientcommandextensions.literal
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import me.unidok.clientcommandextensions.literal
+import me.unidok.clientcommandextensions.runs
 import me.unidok.jmccodespace.Config
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Util
 
 object ConfigNode {
-    fun apply(command: ClientCommand) {
+    fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
         command.literal("config") {
             literal("open") {
-                execute {
+                runs {
                     Util.getOperatingSystem().open(Config.directory)
                 }
             }
             literal("reload") {
-                execute {
+                runs {
                     Config.load()
                     source.sendFeedback(Text.literal("Конфиг перезагружен!"))
                 }
             }
             literal("reset") {
-                execute {
+                runs {
                     Config.reset()
                     source.sendFeedback(Text.literal("Файл конфига сброшен!"))
                 }

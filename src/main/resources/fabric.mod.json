@@ -1,27 +1,31 @@
 {
 	"schemaVersion": 1,
 	"id": "jmc-codespace",
-	"version": "1.1.1",
+	"version": "${mod_version}",
 	"name": "JustMC Codespace",
-	"description": "Утилиты для кодинга на JustMC Creative+",
+	"description": "Утилиты для кодинга на JustMC Creative+.",
+	"icon": "assets/icon.png",
+	"license": "MIT",
 	"authors": [
 		"unidok"
 	],
-	"license": "MIT",
-	"depends": {
-		"fabricloader": ">=0.15.0",
-		"minecraft": ">=1.20.4",
-		"java": ">=17",
-		"fabric-api": "*",
-		"fabric-language-kotlin": ">=1.12.1+kotlin.2.0.20",
-		"client-command-extensions": ">=1.0",
-		"fabric-scheduler": ">=1.0"
+	"contact": {
+		"sources": "https://github.com/unidok/JMC-Codespace",
+		"issues": "https://github.com/unidok/JMC-Codespace/issues"
 	},
 	"environment": "client",
 	"entrypoints": {
 		"client": [
+			"me.unidok.fabricscheduler.Mod",
 			"me.unidok.jmccodespace.Mod"
 		]
+	},
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": ">=${minecraft_version}",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": ">=${fabric_kotlin_version}"
 	},
 	"suggests": {
 		"another-mod": "*"

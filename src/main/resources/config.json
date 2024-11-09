@@ -1,4 +1,8 @@
 {
   "lang": "ru_RU",
-  "shortCommand": "csp"
+  "shortCommand": "csp",
+  "savingPeriod": 64,
+  "defaultFileName": "world_%id% %day%.%month%.%year%",
+  "chunksSearchXLimit": 6,
+  "floorsCheckLimit": 15
 }

@@ -4,22 +4,11 @@ import me.unidok.jmccodespace.Config
 import me.unidok.jmccodespace.SignTranslator
 import net.minecraft.block.entity.SignBlockEntity
 import net.minecraft.client.MinecraftClient
-import java.io.File
-import java.net.InetAddress
 
 object Codespace {
-    val savedCodeDirectory = File(Config.directory, "saved")
-
-//    fun worldEditorId(): String? {
-//        val name = MinecraftClient.getInstance().world!!.registryKey.value.path
-//        return if (name.endsWith("creativeplus_editor")) name.substring(6, 14) else null
-//    }
-
     fun playerInEditor(): Boolean {
-        val client = MinecraftClient.getInstance()
-        val address = client.networkHandler!!.serverInfo!!.address
-        return InetAddress.getByName(address).hostAddress == "137.74.4.178" &&
-                client.world!!.registryKey.value.path.endsWith("creativeplus_editor")
+        val world = MinecraftClient.getInstance().world ?: return false
+        return world.registryKey.value.path.endsWith("creativeplus_editor")
     }
 
     fun search(input: String): List<CodeBlock> {
@@ -27,15 +16,22 @@ object Codespace {
         val player = client.player!!
         val world = player.world
         val founded = ArrayList<CodeBlock>()
-        for (y in 0..5) for (x in 0..5) {
-            for ((pos, block) in world.getChunk(x, y).blockEntities) {
-                if (block !is SignBlockEntity) continue
-                val messages = block.frontText.getMessages(false)
-                val action = SignTranslator.getFullName(messages[1].string)
-                val name = SignTranslator.getFullName(messages[0].string) + if (action == "...") "" else "::$action"
-                if (name.contains(input, true)) founded.add(CodeBlock(pos, name))
+        for (x in 0..<Config.chunksSearchXLimit) { // по длине
+            var sum = 0
+            for (z in 0..5) { // по ширине
+                val blocks = world.getChunk(x, z).blockEntities
+                sum += blocks.size
+                for ((pos, block) in blocks) {
+                    if (block !is SignBlockEntity) continue
+                    val messages = block.frontText.getMessages(false)
+                    val action = SignTranslator.translate(messages[1].string)
+                    val name = SignTranslator.translate(messages[0].string) + if (action == "...") "" else "::$action"
+                    if (name.contains(input, true)) founded.add(CodeBlock(pos, name))
+                }
             }
+            if (sum == 0) break // если не найдено блоков, то считать как конец кода
         }
-        return founded
+        val length = input.length
+        return founded.sortedBy { it.name.length - length }
     }
 }

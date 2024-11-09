@@ -1,29 +1,31 @@
 package me.unidok.jmccodespace.command.node
 
-import com.unidok.clientcommandextensions.ClientCommand
-import com.unidok.clientcommandextensions.execute
-import com.unidok.clientcommandextensions.literal
-import me.unidok.jmccodespace.util.clickEvent
-import me.unidok.jmccodespace.util.hoverEvent
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import me.unidok.clientcommandextensions.literal
+import me.unidok.clientcommandextensions.runs
+import me.unidok.jmccodespace.command.CodespaceCommand
+import me.unidok.jmccodespace.util.Color
+import me.unidok.jmccodespace.util.style
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
 import net.minecraft.text.Text
-import net.minecraft.util.Formatting
 
 object ClearNode {
-    fun apply(command: ClientCommand) {
+    fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
         command.literal("clear") {
             literal("confirm") {
-                execute {
+                runs {
+                    CodespaceCommand.checkPlayerInEditor()
                     source.player.networkHandler.sendCommand("module loadUrl force https://raw.githubusercontent.com/unidok/modules/main/empty.json")
                 }
             }
-            execute {
-                source.sendFeedback(Text.literal("Вы уверены, что хотите очистить ВЕСЬ мир кода? Для подтверждения нажмите на это сообщение.")
-                    .formatted(Formatting.RED)
-                    .clickEvent(ClickEvent.Action.RUN_COMMAND, "/codespace clear confirm")
-                    .hoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Очистить мир кода").formatted(Formatting.RED))
-                )
+            runs {
+                CodespaceCommand.checkPlayerInEditor()
+                source.sendFeedback(Text.literal("Вы уверены, что хотите очистить ВЕСЬ мир кода? Для подтверждения нажмите на это сообщение.").style(
+                    color = Color.RED,
+                    hover = Text.literal("Очистить мир кода").style(color = Color.RED),
+                    click = ClickEvent(ClickEvent.Action.RUN_COMMAND, "/codespace clear confirm")
+                ))
             }
         }
     }
