@@ -124,101 +124,96 @@ object SaveNode {
         val inGameHud = client.inGameHud
         val inventory = player.inventory
         val main = inventory.main
-        fun awaitTp(pos: Vec3d, task: WhenTask.() -> Unit) {
-            networkHandler.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z}")
-            ClientScheduler.run(WhenTask(20, { player.pos.squaredDistanceTo(pos) <= 0.25 /* 0.5^2 */}, task))
-        }
-        awaitTp(Vec3d(0.5, 5.0, 0.5)) {
-            updateItemInInventory(0, ItemStack.EMPTY)
-            ClientScheduler.run(DelayedTask(3) {
-                connection.send(ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY))
-                var i = -1
-                val all = blocks.size
-                val start = System.currentTimeMillis()
-                val handlers = arrayOfNulls<String>(all)
-                val period = Config.savingPeriod
-                ClientScheduler.run(TimerTask(period) {
-                    if (client.world != world) {
-                        stopped = true
-                        cancel()
-                        return@TimerTask
-                    }
-                    if (++i == all) {
-                        connection.send(ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY))
-                        val result = handlers.joinToString(",", "{\"handlers\":[", "]}")
-                        if (name == null) Scope.launch {
-                            player.sendMessage(Text.literal("Загрузка на сервер..."))
-                            try {
-                                val url = upload(result)
-                                player.sendMessage(
-                                    Text.literal("Одноразовая ссылка для загрузки (Будет недействительна через 3 минуты!): ") + Text.literal(url).style(
-                                        underlined = true,
-                                        hover = Text.literal("Нажмите, чтобы скопировать"),
-                                        click = ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, url)
-                                    )
-                                )
-                            } catch (e: Exception) {
-                                player.sendMessage(Text.literal("Произошла ошибка при загрузке на сервер").style(
-                                    color = Color.RED,
-                                    hover = Text.literal(e.message)
-                                ))
-                            }
-                        } else {
-                            SavedCodesNode.mkdir()
-                            val fileName = "$name.json"
-                            val file = File(SavedCodesNode.savedCodesDirectory, fileName)
-                            file.createNewFile()
-                            file.writeText(result)
+        updateItemInInventory(0, ItemStack.EMPTY)
+        ClientScheduler.run(DelayedTask(3) {
+            connection.send(ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY))
+            var i = -1
+            val all = blocks.size
+            val start = System.currentTimeMillis()
+            val handlers = arrayOfNulls<String>(all)
+            val period = Config.savingPeriod
+            ClientScheduler.run(TimerTask(period) {
+                if (client.world != world) {
+                    stopped = true
+                    cancel()
+                    return@TimerTask
+                }
+                if (++i == all) {
+                    connection.send(ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY))
+                    val result = handlers.joinToString(",", "{\"handlers\":[", "]}")
+                    if (name == null) Scope.launch {
+                        player.sendMessage(Text.literal("Загрузка на сервер..."))
+                        try {
+                            val url = upload(result)
                             player.sendMessage(
-                                Text.literal("Код сохранён как ") + Text.literal(fileName).style(
+                                Text.literal("Одноразовая ссылка для загрузки (Будет недействительна через 3 минуты!): ") + Text.literal(url).style(
                                     underlined = true,
-                                    hover = Text.literal("Нажмите, чтобы открыть файл"),
-                                    click = ClickEvent(ClickEvent.Action.OPEN_FILE, file.absolutePath)
+                                    hover = Text.literal("Нажмите, чтобы скопировать"),
+                                    click = ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, url)
                                 )
                             )
+                        } catch (e: Exception) {
+                            player.sendMessage(Text.literal("Произошла ошибка при загрузке на сервер").style(
+                                color = Color.RED,
+                                hover = Text.literal(e.message)
+                            ))
                         }
-                        inGameHud.setTitle(Text.literal("Сохранено!").formatted(Formatting.GREEN))
-                        inGameHud.setSubtitle(Text.literal("Время: ${round((System.currentTimeMillis() - start) / 10f) / 100} секунд"))
-                        inGameHud.setTitleTicks(0, 20, 5)
-                        player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f)
-                        cancel()
-                        return@TimerTask
+                    } else {
+                        SavedCodesNode.mkdir()
+                        val fileName = "$name.json"
+                        val file = File(SavedCodesNode.savedCodesDirectory, fileName)
+                        file.createNewFile()
+                        file.writeText(result)
+                        player.sendMessage(
+                            Text.literal("Код сохранён как ") + Text.literal(fileName).style(
+                                underlined = true,
+                                hover = Text.literal("Нажмите, чтобы открыть файл"),
+                                click = ClickEvent(ClickEvent.Action.OPEN_FILE, file.absolutePath)
+                            )
+                        )
                     }
-                    if (stopped) {
-                        cancel()
-                        return@TimerTask
-                    }
-                    inGameHud.setTitle(Text.literal("${(i + 1) * 100 / all}%").formatted(Formatting.GREEN))
-                    inGameHud.setSubtitle(Text.literal("${i + 1}/$all (~${round((all - i) * period / 2f) / 10} с)"))
-                    inGameHud.setTitleTicks(0, period + 100, 3)
-                    val blockPos = blocks[i]
-                    val y = blockPos.y
-                    val z = blockPos.z
-                    val pos = Vec3d(2.85, y.toDouble(), z + 0.5)
-                    awaitTp(pos) {
-                        interactionManager.attackBlock(blockPos, Direction.WEST)
-                        ClientScheduler.run(WhenTask(20, { !main[0].isEmpty }) {
-                            val vec = pos.subtract(player.pos)
-                            if (vec.lengthSquared() > 0) player.move(MovementType.SELF, vec)
-                            player.yaw = -90f
-                            player.pitch = 45f
-                            inventory.selectedSlot = 0
-                            connection.send(PlayerMoveC2SPacket.LookAndOnGround(-90f, 45f, true))
-                            ClientScheduler.run(DelayedTask(3) {
-                                val hit = player.raycast(5.0, 0f, false)
-                                if (hit is BlockHitResult) interactionManager.interactBlock(player, Hand.MAIN_HAND, hit)
+                    inGameHud.setTitle(Text.literal("Сохранено!").formatted(Formatting.GREEN))
+                    inGameHud.setSubtitle(Text.literal("Время: ${round((System.currentTimeMillis() - start) / 10f) / 100} секунд"))
+                    inGameHud.setTitleTicks(0, 20, 5)
+                    player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f)
+                    cancel()
+                    return@TimerTask
+                }
+                if (stopped) {
+                    cancel()
+                    return@TimerTask
+                }
+                inGameHud.setTitle(Text.literal("${(i + 1) * 100 / all}%").formatted(Formatting.GREEN))
+                inGameHud.setSubtitle(Text.literal("${i + 1}/$all (~${round((all - i) * period / 2f) / 10} с)"))
+                inGameHud.setTitleTicks(0, period + 100, 3)
+                val blockPos = blocks[i]
+                val y = blockPos.y
+                val z = blockPos.z
+                val pos = Vec3d(2.85, y.toDouble(), z + 0.5)
+                networkHandler.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z}")
+                ClientScheduler.run(WhenTask(20, { player.pos.squaredDistanceTo(pos) <= 0.25 /* 0.5^2 */}) {
+                    interactionManager.attackBlock(blockPos, Direction.WEST)
+                    ClientScheduler.run(WhenTask(20, { !main[0].isEmpty }) {
+                        val vec = pos.subtract(player.pos)
+                        if (vec.lengthSquared() > 0) player.move(MovementType.SELF, vec)
+                        player.yaw = -90f
+                        player.pitch = 45f
+                        inventory.selectedSlot = 0
+                        connection.send(PlayerMoveC2SPacket.LookAndOnGround(-90f, 45f, true))
+                        ClientScheduler.run(DelayedTask(3) {
+                            val hit = player.raycast(5.0, 0f, false)
+                            if (hit is BlockHitResult) interactionManager.interactBlock(player, Hand.MAIN_HAND, hit)
 
-                                val handler = getTemplateCode(main[0], true)
-                                    ?.replaceFirst("\"position\":0", "\"position\":$i")
-                                    ?: "{}"
-                                handlers[i] = handler
+                            val handler = getTemplateCode(main[0], true)
+                                ?.replaceFirst("\"position\":0", "\"position\":$i")
+                                ?: "{}"
+                            handlers[i] = handler
 
-                                updateItemInInventory(0, ItemStack.EMPTY)
-                            })
+                            updateItemInInventory(0, ItemStack.EMPTY)
                         })
-                    }
+                    })
                 })
             })
-        }
+        })
     }
 }
