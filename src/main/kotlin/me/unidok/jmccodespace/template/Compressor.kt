@@ -1,11 +1,12 @@
-package me.unidok.jmccodespace.util
+package me.unidok.jmccodespace.template
 
 import java.io.ByteArrayOutputStream
+import java.util.*
 import java.util.zip.Deflater
 import java.util.zip.Inflater
 
 object Compressor {
-    fun compress(src: String): ByteArray {
+    fun compress(src: String): String {
         val input = src.toByteArray()
         val output = ByteArray(input.size * 4)
         val compressor = Deflater()
@@ -13,10 +14,12 @@ object Compressor {
         compressor.finish()
 
         val compressedDataLength = compressor.deflate(output)
-        return output.copyOfRange(0, compressedDataLength)
+
+        return Base64.getEncoder().encodeToString(output.copyOfRange(0, compressedDataLength))
     }
 
-    fun decompress(input: ByteArray): String {
+    fun decompress(input: String): String {
+        val input = Base64.getDecoder().decode(input.encodeToByteArray())
         val inflater = Inflater()
         val outputStream = ByteArrayOutputStream()
 

@@ -1,0 +1,8 @@
+{
+  "localizationFile": "https://gitlab.com/justmc/justmc-localization/-/raw/master/creative_plus/ru_RU.properties",
+  "shortCommand": "csp",
+  "savingPeriod": 70,
+  "defaultFileName": "world_%id% %day%.%month%.%year%",
+  "indexingLimitX": 6,
+  "indexingLimitY": 15
+}

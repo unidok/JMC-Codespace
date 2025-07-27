@@ -11,12 +11,14 @@ import net.minecraft.text.ClickEvent
 import net.minecraft.text.Text
 
 object ClearNode {
+    private const val EMPTY_MODULE_URL = "https://raw.githubusercontent.com/unidok/modules/main/empty.json"
+
     fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
         command.literal("clear") {
             literal("confirm") {
                 runs {
                     CodespaceCommand.checkPlayerInEditor()
-                    source.player.networkHandler.sendCommand("module loadUrl force https://raw.githubusercontent.com/unidok/modules/main/empty.json")
+                    source.player.networkHandler.sendChatCommand("module loadUrl force $EMPTY_MODULE_URL")
                 }
             }
             runs {
@@ -24,7 +26,7 @@ object ClearNode {
                 source.sendFeedback(Text.literal("Вы уверены, что хотите очистить ВЕСЬ мир кода? Для подтверждения нажмите на это сообщение.").style(
                     color = Color.RED,
                     hover = Text.literal("Очистить мир кода").style(color = Color.RED),
-                    click = ClickEvent(ClickEvent.Action.RUN_COMMAND, "/codespace clear confirm")
+                    click = ClickEvent.RunCommand("/codespace clear confirm")
                 ))
             }
         }

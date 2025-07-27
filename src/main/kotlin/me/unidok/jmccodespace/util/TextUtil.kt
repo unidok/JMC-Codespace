@@ -2,7 +2,7 @@ package me.unidok.jmccodespace.util
 
 import net.minecraft.text.*
 
-operator fun MutableText.plus(other: Text) = this.append(other)
+operator fun MutableText.plus(other: Text): MutableText = this.append(other)
 
 fun MutableText.style(
     color: TextColor? = null
@@ -29,7 +29,7 @@ fun MutableText.style(
     if (strikethrough != null) style = style.withStrikethrough(strikethrough)
     if (obfuscated != null) style = style.withObfuscated(obfuscated)
     if (click != null) style = style.withClickEvent(click)
-    if (hover != null) style = style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))
+    if (hover != null) style = style.withHoverEvent(HoverEvent.ShowText(hover))
     if (insertion != null) style = style.withInsertion(insertion)
     return this.setStyle(style)
 }
@@ -53,12 +53,12 @@ fun MutableText.fillStyle(
     if (strikethrough != null) style = style.withStrikethrough(strikethrough)
     if (obfuscated != null) style = style.withObfuscated(obfuscated)
     if (click != null) style = style.withClickEvent(click)
-    if (hover != null) style = style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))
+    if (hover != null) style = style.withHoverEvent(HoverEvent.ShowText(hover))
     if (insertion != null) style = style.withInsertion(insertion)
     return this.fillStyle(style)
 }
 
-fun rgb(rgb: Int): TextColor = TextColor.fromRgb(rgb)
+private fun rgb(rgb: Int): TextColor = TextColor.fromRgb(rgb)
 
 object JustColor {
     val RED = rgb(0xFF6E6E)

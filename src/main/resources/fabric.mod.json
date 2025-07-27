@@ -10,14 +10,13 @@
 		"unidok"
 	],
 	"contact": {
-		"sources": "https://github.com/unidok/JMC-Codespace",
-		"issues": "https://github.com/unidok/JMC-Codespace/issues"
+		"homepage": "https://modrinth.com/mod/jmc-codespace",
+		"sources": "https://github.com/unidok/JMC-Codespace"
 	},
 	"environment": "client",
 	"entrypoints": {
 		"client": [
-			"me.unidok.fabricscheduler.Mod",
-			"me.unidok.jmccodespace.Mod"
+			"me.unidok.jmccodespace.JMCCodespace"
 		]
 	},
 	"depends": {

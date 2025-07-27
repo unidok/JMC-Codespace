@@ -35,8 +35,6 @@
 
 - Сохранённые коды хранятся в **папке с запущенным майнкрафтом** в подкаталоге **config/jmc-codespace/saved**
 
-- **Мод находится в тестировании! Не несу ответственность за ваши коды.**
-
 # Зависимости:
 - [Fabric API](https://modrinth.com/mod/fabric-api/versions)
 - [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin/versions) (2.0.21)
