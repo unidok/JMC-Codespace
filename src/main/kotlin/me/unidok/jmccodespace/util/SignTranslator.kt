@@ -1,6 +1,6 @@
 package me.unidok.jmccodespace.util
 
-import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import me.unidok.jmccodespace.JMCCodespace
 import java.io.InputStreamReader
 import java.net.URI
@@ -14,7 +14,7 @@ object SignTranslator {
 
     fun translate(signText: String): String = map[signText] ?: signText
 
-    suspend fun load() = Scope.async {
+    suspend fun load() = coroutineScope {
         val response = JMCCodespace.httpClient.send(
             HttpRequest.newBuilder(URI(JMCCodespace.config.localizationFile)).GET().build(),
             HttpResponse.BodyHandlers.ofInputStream()
@@ -54,5 +54,5 @@ object SignTranslator {
         }
 
         JMCCodespace.logger.info("Localization loaded")
-    }.await()
+    }
 }

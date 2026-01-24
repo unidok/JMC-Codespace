@@ -11,9 +11,13 @@ import me.unidok.jmccodespace.codespace.Codespace
 import me.unidok.jmccodespace.codespace.NavigationByKeys
 import me.unidok.jmccodespace.command.CodespaceCommand
 import me.unidok.jmccodespace.model.Config
-import me.unidok.jmccodespace.util.Scope
+import me.unidok.jmccodespace.util.AsyncScope
 import me.unidok.jmccodespace.util.SignTranslator
+import me.unidok.jmccodespace.util.plus
 import net.fabricmc.api.ClientModInitializer
+import net.minecraft.text.MutableText
+import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 import net.minecraft.world.World
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -25,9 +29,9 @@ class JMCCodespace : ClientModInitializer {
     override fun onInitializeClient() {
         logger.info("init client")
         loadConfig()
-        Scope.launch { SignTranslator.load() }
+        AsyncScope.launch { SignTranslator.load() }
         CodespaceCommand.register()
-        Codespace.register()
+        Codespace.registerIndexer()
         NavigationByKeys.register()
     }
 
@@ -38,7 +42,13 @@ class JMCCodespace : ClientModInitializer {
         val directory = File("./config/$MOD_ID")
         val configFile = File(directory, "config.json")
         val modulesDirectory = File(directory, "saved")
+        private val json = Json { prettyPrint = true }
         lateinit var config: Config
+
+        val chatPrefix: Text = Text.literal("CSP").withColor(0x5C6CFF) +
+                Text.literal(" » ").formatted(Formatting.DARK_GRAY)
+
+        fun prefixed(text: Text): MutableText = Text.empty().append(chatPrefix).append(text)
 
         fun getModuleFile(name: String): File {
             return File(modulesDirectory, name)
@@ -66,11 +76,15 @@ class JMCCodespace : ClientModInitializer {
             }
 
             config = runCatching {
-                Json.decodeFromStream<Config>(configFile.inputStream())
+                json.decodeFromStream<Config>(configFile.inputStream())
             }.getOrElse { e ->
                 logger.warn("Cannot load config:\n$e")
-                Json.decodeFromStream<Config>(getDefaultConfig())
+                json.decodeFromStream<Config>(getDefaultConfig())
             }
+        }
+
+        fun saveConfig() {
+            configFile.writeText(json.encodeToString(config))
         }
 
         fun resetConfig() {

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 class Config(
     val localizationFile: String,
     val shortCommand: String,
-    val savingPeriod: Int,
+    var savingPeriod: Int,
     val defaultFileName: String,
     val indexingLimitX: Int,
     val indexingLimitY: Int

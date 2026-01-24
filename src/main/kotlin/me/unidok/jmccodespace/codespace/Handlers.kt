@@ -1,7 +1,9 @@
 package me.unidok.jmccodespace.codespace
 
-import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -9,6 +11,8 @@ import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.JMCCodespace.Companion.httpClient
 import me.unidok.jmccodespace.template.Templates
 import me.unidok.jmccodespace.util.*
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.ClientStopping
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.entity.MovementType
@@ -29,41 +33,50 @@ import java.io.File
 import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import kotlin.math.round
+import java.time.Duration
+
 
 object Handlers {
-    var savingIsStopped = true
+    private var savingIsActive = false
 
-    suspend fun upload(module: String): String {
-        return Scope.async {
-            val request = HttpRequest.newBuilder()
-                .uri(URI("https://m.justmc.ru/api/upload"))
-                .POST(HttpRequest.BodyPublishers.ofString(module))
-                .build()
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            val body = Json.parseToJsonElement(response.body()).jsonObject
-            val statusCode = response.statusCode()
-            if (statusCode == 200) return@async "https://m.justmc.ru/api/" + body["id"]!!.jsonPrimitive.content
-            throw Exception("$statusCode: " + body["error"]?.jsonPrimitive?.content)
-        }.await()
+    suspend fun upload(data: String): String = coroutineScope {
+        val request = HttpRequest.newBuilder()
+            .uri(URI("https://m.justmc.ru/api/upload"))
+            .POST(HttpRequest.BodyPublishers.ofString(data))
+            .timeout(Duration.ofSeconds(30))
+            .build()
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        val body = Json.parseToJsonElement(response.body()).jsonObject
+        val statusCode = response.statusCode()
+        if (statusCode == 200) return@coroutineScope "https://m.justmc.ru/api/" + body["id"]!!.jsonPrimitive.content
+        throw IOException("HTTP $statusCode: $body")
     }
 
-    private inline fun awaitWhileNot(predicate: () -> Boolean) {
-        var i = 0
-        while (!predicate()) {
-            Thread.sleep(50)
-            if (i++ == 20) return
+    private fun saveAsFile(fileName: String, data: String) {
+        val file = File(JMCCodespace.modulesDirectory, fileName)
+        file.createNewFile()
+        file.writeText(data)
+        JMCCodespace.logger.info("Saved $fileName")
+        runInMainThread {
+            MinecraftClient.getInstance().player?.sendMessageFromCodespace(
+                Text.literal("Код сохранён как ") + Text.literal(fileName).style(
+                    underlined = true,
+                    hover = Text.literal("Нажмите, чтобы открыть файл"),
+                    click = ClickEvent.OpenFile(file.absolutePath)
+                )
+            )
         }
     }
 
-    fun save(
+    fun startSaving(
         player: ClientPlayerEntity,
         name: String?,
-        upload: Boolean
-    ) = Scope.launch {
+        upload: Boolean,
+        fast: Boolean
+    ) = AsyncScope.launch {
         val startTime = System.currentTimeMillis()
 
-        savingIsStopped = false
+        savingIsActive = true
 
         val world = player.clientWorld
 
@@ -84,114 +97,165 @@ object Handlers {
         val interactionManager = client.interactionManager!!
         val inGameHud = client.inGameHud
         val inventory = player.inventory
-
-        inventory.setStack(0, ItemStack.EMPTY)
-        networkHandler.updateItemInInventory(0, ItemStack.EMPTY)
-
-        Thread.sleep(150)
-
         var index = 0
         val amount = blocks.size
-        val handlers = arrayOfNulls<String>(amount)
-        val period = JMCCodespace.config.savingPeriod
+        val handlers = ArrayList<String>(amount)
+        val delayMillis = JMCCodespace.config.savingPeriod * 50L
+        val partDelayMillis = delayMillis / 5 // Делится без остатка
+        val fileName = (name ?: JMCCodespace.getModuleFileName(world)) + ".json"
+        val timeCorrection = if (fast) 0.001f else 0.002f
 
-        while (client.world == world && !savingIsStopped) {
-            connection.send(PlayerInputC2SPacket(PlayerInput(false, false, false, false, false, true, false)))
+        runInMainThread {
+            player.sendMessageFromCodespace(Text.literal("Обнаружено $amount строк кода."))
+            player.sendMessageFromCodespace(Text.literal("Примерное время - ${"%.2f".format(amount * delayMillis * timeCorrection)} секунд."))
+            player.sendMessageFromCodespace(Text.literal("Сохранение кода запущено."))
+            if (fast) player.sendMessageFromCodespace(Text.literal("Выбран быстрый режим. Чтобы восстановить код, загрузите файл, который будет создан по окончании сохранения."))
+            player.sendMessageFromCodespace(Text.literal("Для остановки используйте ") +
+                    Text.literal("/${JMCCodespace.config.shortCommand} save stop").style(
+                        underlined = true,
+                        color = JustColor.RED,
+                        click = ClickEvent.RunCommand("/${JMCCodespace.config.shortCommand} save stop")
+                    ))
+        }
 
-            inGameHud.setTitle(Text.literal("${(index + 1) * 100 / amount}%").formatted(Formatting.GREEN))
-            inGameHud.setSubtitle(Text.literal("${index + 1}/$amount (~${round((amount - index) * period / 2f) / 10} с)"))
-            inGameHud.setTitleTicks(0, period + 100, 3)
+        fun isActive(): Boolean = savingIsActive && client.world == world
 
+        while (isActive()) {
             val blockPos = blocks[index]
             val pos = Vec3d(2.85, blockPos.y.toDouble(), blockPos.z + 0.5)
 
-            networkHandler.sendChatCommand("editor tp ${pos.x} ${pos.y} ${pos.z}")
+            runInMainThread {
+                connection.send(PlayerInputC2SPacket(PlayerInput(false, false, false, false, false, true, false)))
 
-            awaitWhileNot {
-                player.pos.squaredDistanceTo(pos) <= 0.25
+                inGameHud.setTitle(Text.literal("${(index + 1) * 100 / amount}%").formatted(Formatting.GREEN))
+                inGameHud.setSubtitle(Text.literal("%d/%d (~ %.2f s)".format(
+                    index + 1,
+                    amount,
+                    (amount - index) * delayMillis * timeCorrection
+                )))
+                inGameHud.setTitleTicks(0, delayMillis.toInt(), 3)
+
+                inventory.setStack(0, ItemStack.EMPTY)
+                connection.updateItemInInventory(0, ItemStack.EMPTY)
+
+                networkHandler.sendChatCommand("editor tp ${pos.x} ${pos.y} ${pos.z}")
             }
 
-            interactionManager.attackBlock(blockPos, Direction.WEST)
+            // Странная система с delay нужна для лучшего распределения ожидания
 
-            awaitWhileNot {
-                !inventory.getStack(0).isEmpty
+            delay(2 * partDelayMillis) // 3, 4
+            if (!isActive()) break
+
+            runInMainThread {
+                val vec = pos.subtract(player.pos)
+                val delta = vec.lengthSquared()
+                if (delta > 0 && delta < 1) player.move(MovementType.SELF, vec)
+                player.yaw = -90f
+                player.pitch = 45f
+                inventory.selectedSlot = 0
+                connection.send(PlayerMoveC2SPacket.LookAndOnGround(-90f, 45f, true, true))
             }
 
-            val vec = pos.subtract(player.pos)
-            if (vec.lengthSquared() > 0) player.move(MovementType.SELF, vec)
-            player.yaw = -90f
-            player.pitch = 45f
-            inventory.selectedSlot = 0
-            connection.send(PlayerMoveC2SPacket.LookAndOnGround(-90f, 45f, true, true))
+            delay(partDelayMillis) // 5
+            if (!isActive()) break
 
-            Thread.sleep(150)
+            runInMainThread {
+                interactionManager.attackBlock(blockPos, Direction.WEST)
+            }
 
-            val hit = player.raycast(5.0, 0f, false)
-            if (hit is BlockHitResult) interactionManager.interactBlock(player, Hand.MAIN_HAND, hit)
+            delay(2 * partDelayMillis) // 1, 2
 
-            val handler = Templates.getCodeJson(inventory.getStack(0))
-                ?.replaceFirst("\"position\":0", "\"position\":$index")
-                ?: "{}"
+            val handler = runInMainThreadSuspend {
+                Templates.getCodeJson(inventory.getStack(0))
+            }
 
-            handlers[index] = handler
+            handlers.add(handler?.replaceFirst("\"position\":0", "\"position\":$index") ?: "{}")
 
-            inventory.setStack(0, ItemStack.EMPTY)
-            networkHandler.updateItemInInventory(0, ItemStack.EMPTY)
+            if (!fast) {
+                delay(3 * partDelayMillis) // 3, 4, 5
+                runInMainThread {
+                    val hit = player.raycast(5.0, 0f, false)
+                    if (hit is BlockHitResult) interactionManager.interactBlock(player, Hand.MAIN_HAND, hit)
+                }
+                delay(2 * partDelayMillis) // 1, 2
+            }
 
-            if (++index == amount) {
+            if (++index == amount) break
+        }
+
+        val result = handlers.joinToString(",", "{\"handlers\":[", "]}")
+
+        if (isActive()) { // success
+            saveAsFile(fileName, result)
+
+            runInMainThread {
+                inventory.setStack(0, ItemStack.EMPTY)
+                connection.updateItemInInventory(0, ItemStack.EMPTY)
                 connection.send(PlayerInputC2SPacket(PlayerInput(false, false, false, false, false, false, false)))
+            }
 
-                val result = handlers.joinToString(",", "{\"handlers\":[", "]}")
-
-                if (upload) Scope.launch {
-                    player.sendMessage(Text.literal("Загрузка на сервер..."))
-                    runCatching {
-                        val url = upload(result)
-                        player.sendMessage(
-                            Text.literal("Одноразовая ссылка для загрузки (Будет недействительна через 3 минуты!): ") + Text.literal(url).style(
+            if (upload) {
+                runInMainThread {
+                    inGameHud.setTitle(Text.literal("Загрузка на сервер..."))
+                    inGameHud.setSubtitle(null)
+                    inGameHud.setTitleTicks(0, 300, 3)
+                }
+                try {
+                    val url = upload(result)
+                    runInMainThread {
+                        player.sendMessageFromCodespace(
+                            Text.literal("Временная ссылка для загрузки: ") + Text.literal(
+                                url
+                            ).style(
                                 underlined = true,
+                                color = JustColor.GRAY,
                                 hover = Text.literal("Нажмите, чтобы скопировать"),
                                 click = ClickEvent.CopyToClipboard(url)
                             )
                         )
-                    }.getOrElse { e ->
-                        player.sendMessage(Text.literal("Произошла ошибка при загрузке на сервер.").style(
-                            color = Color.RED,
-                            hover = Text.literal(e.message)
-                        ))
-                        val fileName = JMCCodespace.getModuleFileName(world) + ".json"
-                        val file = File(JMCCodespace.modulesDirectory, fileName)
-                        file.createNewFile()
-                        file.writeText(result)
-                        player.sendMessage(
-                            Text.literal("Код сохранён как ") + Text.literal(fileName).style(
-                                underlined = true,
-                                hover = Text.literal("Нажмите, чтобы открыть файл"),
-                                click = ClickEvent.OpenFile(file.absolutePath)
+                    }
+                } catch (e: Throwable) {
+                    runInMainThread {
+                        player.sendMessageFromCodespace(
+                            Text.literal("Произошла ошибка при загрузке на сервер.").style(
+                                color = Color.RED,
+                                hover = Text.literal(e.toString())
                             )
                         )
                     }
-                } else {
-                    val fileName = (name ?: JMCCodespace.getModuleFileName(world)) + ".json"
-                    val file = File(JMCCodespace.modulesDirectory, fileName)
-                    file.createNewFile()
-                    file.writeText(result)
-                    player.sendMessage(
-                        Text.literal("Код сохранён как ") + Text.literal(fileName).style(
-                            underlined = true,
-                            hover = Text.literal("Нажмите, чтобы открыть файл"),
-                            click = ClickEvent.OpenFile(file.absolutePath)
-                        )
-                    )
                 }
-                inGameHud.setTitle(Text.literal("Сохранено!").formatted(Formatting.GREEN))
-                inGameHud.setSubtitle(Text.literal("Время: ${round((System.currentTimeMillis() - startTime) / 10f) / 100} секунд"))
-                inGameHud.setTitleTicks(0, 20, 5)
-                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f)
-                break
             }
 
-            Thread.sleep(period * 50L)
+            runInMainThread {
+                val time = "%.2f".format((System.currentTimeMillis() - startTime) / 1000f)
+                inGameHud.setTitle(Text.literal("Сохранено!").formatted(Formatting.GREEN))
+                inGameHud.setSubtitle(Text.literal("Время: $time секунд"))
+                inGameHud.setTitleTicks(0, 20, 5)
+                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f)
+                player.sendMessageFromCodespace(Text.literal("Сохранение кода завершено. ($time сек.)").style(color = JustColor.GREEN))
+                if (fast) player.sendMessageFromCodespace(Text.literal("Выбран быстрый режим. Нажмите на это сообщение, чтобы загрузить сохранённый код.").style(
+                    click = ClickEvent.RunCommand("/codespace modules load $fileName")
+                ))
+            }
+        } else { // stopped/failed
+            fun save(client: MinecraftClient?) {
+                JMCCodespace.logger.warn("Saving failed")
+                saveAsFile("${fileName.substringBeforeLast('.')}-failed-${System.currentTimeMillis().hashCode().toUInt().toString(36)}.json", result)
+            }
+
+            ClientLifecycleEvents.CLIENT_STOPPING.register(ClientStopping(::save))
+
+            save(client)
         }
+
+        savingIsActive = false
+    }
+
+    fun stopSaving(): Boolean {
+        if (savingIsActive) {
+            savingIsActive = false
+            return true
+        }
+        return false
     }
 }

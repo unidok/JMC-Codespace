@@ -1,5 +1,6 @@
 package me.unidok.jmccodespace.codespace
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.model.CodeBlock
@@ -32,10 +33,10 @@ object Codespace {
 
     fun playerInEditor(): Boolean = isEditor(MinecraftClient.getInstance().world)
 
-    fun register() = ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register { client, world ->
+    fun registerIndexer() = ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register { client, world ->
         if (isEditor(world)) {
-            Scope.launch {
-                Thread.sleep(1000)
+            AsyncScope.launch {
+                delay(1000)
                 index(world)
             }
         }

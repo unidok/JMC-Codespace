@@ -10,14 +10,15 @@ import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.codespace.Handlers
 import me.unidok.jmccodespace.command.CodespaceCommand
 import me.unidok.jmccodespace.template.Templates
-import me.unidok.jmccodespace.util.Color
-import me.unidok.jmccodespace.util.Scope
+import me.unidok.jmccodespace.util.AsyncScope
+import me.unidok.jmccodespace.util.JustColor
+import me.unidok.jmccodespace.util.sendMessageFromCodespace
 import me.unidok.jmccodespace.util.style
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Util
 
-object SavedCodesNode {
+object ModulesNode {
     fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
         val nameArgument = argumentBuilder("name", StringArgumentType.greedyString()) {
             smartSuggests(Match.CONTAINS_IGNORE_CASE) {
@@ -33,7 +34,7 @@ object SavedCodesNode {
             literal("clear") {
                 runs {
                     for (file in JMCCodespace.modulesDirectory.listFiles()) file.deleteRecursively()
-                    source.sendFeedback(Text.literal("Все сохранённые коды удалены."))
+                    source.player.sendMessageFromCodespace(Text.literal("Все сохранённые коды удалены."))
                 }
             }
 
@@ -41,7 +42,7 @@ object SavedCodesNode {
                 then(nameArgument.runs {
                     val name = getArgument<String>("name")
                     JMCCodespace.getModuleFile(name).deleteRecursively()
-                    source.sendFeedback(Text.literal("Файл $name удалён"))
+                    source.player.sendMessageFromCodespace(Text.literal("Файл $name удалён"))
                 })
             }
 
@@ -65,7 +66,7 @@ object SavedCodesNode {
                         Templates.optimize(it.jsonObject)
                     }
                     file.writeText(JsonObject(mapOf("handlers" to JsonArray(optimized))).toString())
-                    source.sendFeedback(Text.literal("Модуль $name оптимизирован"))
+                    source.player.sendMessageFromCodespace(Text.literal("Модуль $name оптимизирован"))
                 })
             }
         }
@@ -75,17 +76,17 @@ object SavedCodesNode {
         CodespaceCommand.checkPlayerInEditor()
 
         val name = getArgument<String>("name")
-        val module = JMCCodespace.getModuleFile(name).readText()
+        val data = JMCCodespace.getModuleFile(name).readText()
 
-        source.sendFeedback(Text.literal("Загрузка файла на сервер..."))
+        source.player.sendMessageFromCodespace(Text.literal("Загрузка файла на сервер..."))
 
-        Scope.launch {
+        AsyncScope.launch {
             runCatching {
-                val url = Handlers.upload(module)
+                val url = Handlers.upload(data)
                 source.client.networkHandler!!.sendChatCommand("module loadUrl ${if (force) "force " else ""}$url")
             }.getOrElse { e ->
-                source.sendFeedback(Text.literal("Произошла ошибка при загрузке на сервер").style(
-                    color = Color.RED,
+                source.player.sendMessageFromCodespace(Text.literal("Произошла ошибка при загрузке на сервер").style(
+                    color = JustColor.RED,
                     hover = Text.literal(e.message)
                 ))
             }
