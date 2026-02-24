@@ -1,8 +1,8 @@
 package me.unidok.jmccodespace.model
 
 import me.unidok.jmccodespace.util.SignTranslator
-import net.minecraft.block.entity.SignBlockEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.block.entity.SignBlockEntity
 
 class CodeBlock(
     val pos: BlockPos,
@@ -10,7 +10,7 @@ class CodeBlock(
     val action: String
 ) {
     constructor(sign: SignBlockEntity) : this(
-        sign.pos,
+        sign.blockPos,
         sign.frontText.getMessage(0, false).string,
         sign.frontText.getMessage(1, false).string
     )

@@ -12,50 +12,46 @@ import me.unidok.jmccodespace.codespace.Handlers
 import me.unidok.jmccodespace.command.CodespaceCommand
 import me.unidok.jmccodespace.util.Color
 import me.unidok.jmccodespace.util.JustColor
+import me.unidok.jmccodespace.util.Text
 import me.unidok.jmccodespace.util.style
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
 
 object SaveNode {
     private val exception = SimpleCommandExceptionType(JMCCodespace.prefixed(Text.literal("Сейчас не идёт процесс сохранения").style(color = JustColor.RED)))
 
     fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
         command.literal("save") {
-            fun LiteralArgumentBuilder<FabricClientCommandSource>.saveNode(fast: Boolean) {
-                literal("upload") {
-                    runs {
-                        CodespaceCommand.checkPlayerInEditor()
-                        Handlers.startSaving(source.player, null, true, fast)
-                    }
-                }
-                literal("file") {
-                    argument("name", StringArgumentType.greedyString()) {
-                        runs {
-                            CodespaceCommand.checkPlayerInEditor()
-                            Handlers.startSaving(source.player, getArgument("name"), false, fast)
-                        }
-                    }
-                    runs {
-                        CodespaceCommand.checkPlayerInEditor()
-                        Handlers.startSaving(source.player, null, false, fast)
-                    }
+            literal("upload") {
+                runs {
+                    CodespaceCommand.checkPlayerInEditor()
+                    Handlers.startSaving(source.player, null, true)
                 }
             }
+
+            literal("file") {
+                argument("name", StringArgumentType.greedyString()) {
+                    runs {
+                        CodespaceCommand.checkPlayerInEditor()
+                        Handlers.startSaving(source.player, getArgument("name"), false)
+                    }
+                }
+                runs {
+                    CodespaceCommand.checkPlayerInEditor()
+                    Handlers.startSaving(source.player, null, false)
+                }
+            }
+
             literal("stop") {
                 runs {
                     CodespaceCommand.checkPlayerInEditor()
                     if (!Handlers.stopSaving()) throw exception.create()
-                    val inGameHud = MinecraftClient.getInstance().inGameHud
-                    inGameHud.setTitle(Text.literal("Отменено").style(color = Color.RED))
-                    inGameHud.setSubtitle(Text.empty())
-                    inGameHud.setTitleTicks(0, 20, 5)
+                    val gui = Minecraft.getInstance().gui
+                    gui.setTitle(Text.literal("Отменено").style(color = Color.RED))
+                    gui.setSubtitle(Text.empty())
+                    gui.setTimes(0, 20, 5)
                 }
             }
-            literal("fast") {
-                saveNode(true)
-            }
-            saveNode(false)
         }
     }
 }

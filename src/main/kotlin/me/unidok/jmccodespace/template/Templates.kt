@@ -1,42 +1,42 @@
 package me.unidok.jmccodespace.template
 
 import kotlinx.serialization.json.*
-import net.minecraft.component.DataComponentTypes
-import net.minecraft.component.type.NbtComponent
-import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.core.component.DataComponents
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.component.CustomData
 import kotlin.jvm.optionals.getOrNull
 
 object Templates {
-    fun getCodeRaw(item: ItemStack): String? = item.components[DataComponentTypes.CUSTOM_DATA]
-        ?.copyNbt()
+    fun getCodeRaw(item: ItemStack): String? = item.components[DataComponents.CUSTOM_DATA]
+        ?.copyTag()
         ?.getCompound("PublicBukkitValues")?.getOrNull()
         ?.getString("justmc:template")?.getOrNull()
 
-    fun getCodeJson(item: ItemStack): String? = runCatching {
-        val raw = getCodeRaw(item) ?: return null
-        Compressor.decompress(raw)
+    fun getCodeJson(raw: String?): String? = runCatching {
+        Compressor.decompress(raw ?: return null)
     }.getOrNull()
 
-    fun getCode(item: ItemStack): JsonObject? = runCatching {
-        val json = getCodeJson(item) ?: return null
+    fun getCode(raw: String?): JsonObject? = runCatching {
+        val json = getCodeJson(raw) ?: return null
         Json.parseToJsonElement(json).jsonObject
     }.getOrNull()
 
-    fun setCode(item: ItemStack, code: JsonObject) {
-        val code = Compressor.compress(code.toString())
-        val nbt = item.components[DataComponentTypes.CUSTOM_DATA]?.copyNbt() ?: NbtCompound()
-
+    fun setCodeRaw(item: ItemStack, code: String) {
+        val nbt = item.components[DataComponents.CUSTOM_DATA]?.copyTag() ?: CompoundTag()
         val publicBukkitValues = nbt.getCompound("PublicBukkitValues")
         if (publicBukkitValues.isEmpty) {
-            nbt.put("PublicBukkitValues", NbtCompound().apply {
+            nbt.put("PublicBukkitValues", CompoundTag().apply {
                 putString("justmc:template", code)
             })
         } else {
             publicBukkitValues.get().putString("justmc:template", code)
         }
+        item.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt))
+    }
 
-        item.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
+    fun setCode(item: ItemStack, code: JsonObject) {
+        setCodeRaw(item, Compressor.compress(code.toString()))
     }
 
     fun optimize(code: JsonObject): JsonObject {

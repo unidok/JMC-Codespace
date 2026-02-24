@@ -1,20 +1,21 @@
 package me.unidok.jmccodespace.util
 
 import me.unidok.jmccodespace.JMCCodespace
-import net.minecraft.client.network.ClientPlayerEntity
-import net.minecraft.item.ItemStack
-import net.minecraft.network.ClientConnection
-import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.multiplayer.ClientPacketListener
+import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket
+import net.minecraft.world.item.ItemStack
 
-fun ClientConnection.updateItemInInventory(slot: Int, item: ItemStack) {
-    send(CreativeInventoryActionC2SPacket(36 + slot, item))
+fun ClientPacketListener.updateItemInInventory(slot: Int, item: ItemStack) {
+    send(ServerboundSetCreativeModeSlotPacket(36 + slot, item))
 }
 
-fun ClientPlayerEntity.sendMessage(text: Text) {
-    sendMessage(text, false)
+fun sendMessage(text: Text) {
+    runInMainThread {
+        Minecraft.getInstance().chatListener.handleSystemMessage(text, false)
+    }
 }
 
-fun ClientPlayerEntity.sendMessageFromCodespace(text: Text) {
+fun sendMessageFromCodespace(text: Text) {
     sendMessage(JMCCodespace.prefixed(text))
 }

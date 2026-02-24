@@ -1,6 +1,9 @@
 package me.unidok.jmccodespace.util
 
-import net.minecraft.text.*
+import net.minecraft.network.chat.*
+
+typealias Text = Component
+typealias MutableText = MutableComponent
 
 operator fun MutableText.plus(other: Text): MutableText = this.append(other)
 
@@ -25,7 +28,7 @@ fun MutableText.style(
     if (color != null) style = style.withColor(color)
     if (bold != null) style = style.withBold(bold)
     if (italic != null) style = style.withItalic(italic)
-    if (underlined != null) style = style.withUnderline(underlined)
+    if (underlined != null) style = style.withUnderlined(underlined)
     if (strikethrough != null) style = style.withStrikethrough(strikethrough)
     if (obfuscated != null) style = style.withObfuscated(obfuscated)
     if (click != null) style = style.withClickEvent(click)
@@ -34,7 +37,7 @@ fun MutableText.style(
     return this.setStyle(style)
 }
 
-fun MutableText.fillStyle(
+fun MutableText.withStyle(
     color: TextColor? = null,
     bold: Boolean? = null,
     italic: Boolean? = null,
@@ -49,13 +52,13 @@ fun MutableText.fillStyle(
     if (color != null) style = style.withColor(color)
     if (bold != null) style = style.withBold(bold)
     if (italic != null) style = style.withItalic(italic)
-    if (underlined != null) style = style.withUnderline(underlined)
+    if (underlined != null) style = style.withUnderlined(underlined)
     if (strikethrough != null) style = style.withStrikethrough(strikethrough)
     if (obfuscated != null) style = style.withObfuscated(obfuscated)
     if (click != null) style = style.withClickEvent(click)
     if (hover != null) style = style.withHoverEvent(HoverEvent.ShowText(hover))
     if (insertion != null) style = style.withInsertion(insertion)
-    return this.fillStyle(style)
+    return this.withStyle(style)
 }
 
 private fun rgb(rgb: Int): TextColor = TextColor.fromRgb(rgb)

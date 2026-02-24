@@ -7,9 +7,9 @@ import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.codespace.Codespace
 import me.unidok.jmccodespace.command.node.*
 import me.unidok.jmccodespace.util.JustColor
+import me.unidok.jmccodespace.util.Text
 import me.unidok.jmccodespace.util.style
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.text.Text
 
 object CodespaceCommand : ClientCommand("codespace", JMCCodespace.config.shortCommand) {
     override fun build(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
@@ -22,6 +22,10 @@ object CodespaceCommand : ClientCommand("codespace", JMCCodespace.config.shortCo
     }
 
     fun checkPlayerInEditor() {
-        if (!Codespace.playerInEditor()) throw SimpleCommandExceptionType(JMCCodespace.prefixed(Text.literal("Вы не находитесь в мире разработки").style(color = JustColor.RED))).create()
+        if (!Codespace.playerInEditor()) {
+            throw SimpleCommandExceptionType(
+                JMCCodespace.prefixed(Text.literal("Вы не находитесь в мире разработки").style(color = JustColor.RED))
+            ).create()
+        }
     }
 }

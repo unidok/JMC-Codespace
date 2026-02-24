@@ -5,7 +5,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import me.unidok.jmccodespace.JMCCodespace
-import net.minecraft.client.MinecraftClient
+import net.minecraft.client.Minecraft
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -16,8 +16,8 @@ object AsyncScope : CoroutineScope {
 }
 
 fun runInMainThread(block: () -> Unit) {
-    val client = MinecraftClient.getInstance()
-    if (client.isOnThread) return block()
+    val client = Minecraft.getInstance()
+    if (client.isSameThread) return block()
     client.execute(block)
 }
 

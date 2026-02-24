@@ -1,87 +1,97 @@
 package me.unidok.jmccodespace.codespace
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.model.CodeBlock
 import me.unidok.jmccodespace.util.*
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents
-import net.minecraft.block.Block
-import net.minecraft.block.entity.SignBlockEntity
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.network.ClientPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.text.TextColor
-import net.minecraft.world.World
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.components.ChatComponent
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.TextColor
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.LevelAccessor
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.entity.SignBlockEntity
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 object Codespace {
-    lateinit var cache: List<CodeBlock>
+    lateinit var codeBlocksCache: List<CodeBlock>
         private set
+
     private lateinit var searchInput: String
     private lateinit var searchCache: List<CodeBlock>
+
     var searchMaxPage = 0
         private set
 
+    private var currentIndexJob: Job? = null
+
     fun searchPerformed(): Boolean = searchMaxPage > 0
 
-    fun isEditor(world: World?): Boolean = world != null && world.registryKey.value.path.endsWith("creativeplus_editor")
+    fun isEditor(world: Level?): Boolean = world != null && world.dimension().identifier().path.endsWith("creativeplus_editor")
 
-    fun playerInEditor(): Boolean = isEditor(MinecraftClient.getInstance().world)
+    fun playerInEditor(): Boolean = isEditor(Minecraft.getInstance().level)
 
     fun registerIndexer() = ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register { client, world ->
         if (isEditor(world)) {
-            AsyncScope.launch {
+            currentIndexJob?.cancel()
+            currentIndexJob = AsyncScope.launch {
                 delay(1000)
-                index(world)
+                runInMainThread { index(world) }
+                currentIndexJob = null
             }
         }
     }
 
-    fun index(world: World) = buildList {
+    fun index(world: LevelAccessor) = buildList {
         for (x in 0..<JMCCodespace.config.indexingLimitX) {
             for (z in 0..5) {
-                for (block in world.getChunk(x, z).blockEntities.values) {
-                    if (block !is SignBlockEntity) continue
-                    add(CodeBlock(block))
+                for (blockPos in world.getChunk(x, z).blockEntitiesPos) {
+                    val sign = world.getBlockEntity(blockPos) as? SignBlockEntity ?: continue
+                    add(CodeBlock(sign))
                 }
             }
         }
-    }.also { cache = it }
+    }.also { codeBlocksCache = it }
 
-    fun search(world: World, input: String, block: Block? = null): List<CodeBlock> = index(world)
+    fun performSearch(world: Level, input: String, block: Block? = null): List<CodeBlock> {
+        val result = search(world, input, block)
+        searchInput = input
+        searchCache = result
+        searchMaxPage = max(1, result.size / 9)
+        printSigns(1)
+        return result
+    }
+
+    fun search(world: Level, input: String, block: Block? = null): List<CodeBlock> = index(world)
         .asSequence()
         .filter { it.getFullName(true).contains(input, true) && (block == null || world.getBlockState(it.originPos).block == block) }
         .sortedBy { it.type.length - input.length }
         .toList()
-        .also {
-            searchInput = input
-            searchCache = it
-            searchMaxPage = max(1, it.size / 9)
-        }
 
-    fun printSigns(player: ClientPlayerEntity, page: Int) {
-        val client = MinecraftClient.getInstance()
-        val textRenderer = client.textRenderer
-        val chatWidth = client.inGameHud.chatHud.width
-        val spaceWidth = textRenderer.getWidth(" ")
+    fun printSigns(page: Int) {
+        val client = Minecraft.getInstance()
+        val font = client.font
+        val chatWidth = ChatComponent.getWidth(client.options.chatWidth().get())
+        val spaceWidth = font.width(" ")
 
         fun indent(width: Int): MutableText {
             return Text.literal(" ".repeat(width / spaceWidth)) + Text.literal("\u200C".repeat(width % spaceWidth)).style(bold = true)
         }
 
-        fun line(title: MutableText, color: TextColor): MutableText {
-            val width = (chatWidth - textRenderer.getWidth(title) - spaceWidth * 2) / 2f
+        fun line(title: Text, color: TextColor): MutableText {
+            val width = (chatWidth - font.width(title) - spaceWidth * 2) / 2f
             return Text.empty() +
-                    indent(width.toInt()).fillStyle(strikethrough = true, color = color) +
+                    indent(width.toInt()).withStyle(strikethrough = true, color = color) +
                     Text.literal(" ") +
                     title +
                     Text.literal(" ") +
-                    indent(width.roundToInt()).fillStyle(strikethrough = true, color = color)
+                    indent(width.roundToInt()).withStyle(strikethrough = true, color = color)
         }
 
         var message = line(Text.literal("Результаты поиска")
@@ -90,7 +100,7 @@ object Codespace {
         val size = searchCache.size
 
         if (size == 0) {
-            player.sendMessage(message + Text.literal("Ничего не найдено\n").style(color = JustColor.RED) + indent(chatWidth).style(strikethrough = true, color = JustColor.GRAY))
+            sendMessage(message + Text.literal("Ничего не найдено\n").style(color = JustColor.RED) + indent(chatWidth).style(strikethrough = true, color = JustColor.GRAY))
             return
         }
 
@@ -154,6 +164,6 @@ object Codespace {
         )
         else Text.literal(" ▶").style(color = JustColor.DARK_GRAY)
 
-        player.sendMessage(message + line(pages, JustColor.GRAY))
+        sendMessage(message + line(pages, JustColor.GRAY))
     }
 }

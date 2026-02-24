@@ -9,5 +9,6 @@ class Config(
     var savingPeriod: Int,
     val defaultFileName: String,
     val indexingLimitX: Int,
-    val indexingLimitY: Int
+    val indexingLimitY: Int,
+    val modulesDirectory: String
 )

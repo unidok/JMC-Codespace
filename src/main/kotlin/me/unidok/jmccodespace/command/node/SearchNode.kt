@@ -9,9 +9,10 @@ import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.codespace.Codespace
 import me.unidok.jmccodespace.command.CodespaceCommand
 import me.unidok.jmccodespace.util.JustColor
+import me.unidok.jmccodespace.util.Text
 import me.unidok.jmccodespace.util.style
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
 
 object SearchNode {
     fun apply(command: LiteralArgumentBuilder<FabricClientCommandSource>) {
@@ -26,7 +27,7 @@ object SearchNode {
                     if (page !in 1..Codespace.searchMaxPage) {
                         throw SimpleCommandExceptionType(JMCCodespace.prefixed(Text.literal("Указанная страница не входит в интервал [1; ${Codespace.searchMaxPage}]").style(color = JustColor.RED))).create()
                     }
-                    Codespace.printSigns(source.player, page)
+                    Codespace.printSigns(page)
                 }
             }
         }
@@ -34,7 +35,7 @@ object SearchNode {
             argument("input", StringArgumentType.greedyString()) {
                 suggests {
                     val remaining = remainingLowerCase
-                    Codespace.cache.forEach { block ->
+                    Codespace.codeBlocksCache.forEach { block ->
                         val name = block.getFullName(true)
                         if (name.contains(remaining, true)) suggest(name)
                     }
@@ -42,8 +43,7 @@ object SearchNode {
                 runs {
                     CodespaceCommand.checkPlayerInEditor()
                     val input = getArgument<String>("input")
-                    Codespace.search(source.player.world, input)
-                    Codespace.printSigns(source.player, 1)
+                    Codespace.performSearch(Minecraft.getInstance().level!!, input)
                 }
             }
         }
