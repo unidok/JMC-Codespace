@@ -52,7 +52,7 @@ object NavigationByKeys {
                                 val pos = founded[0].pos
                                 client.connection?.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z + 1}")
                             } else {
-                                connection.sendCommand("editor usages process $name")
+                                connection.sendCommand("editor usages function $name")
                             }
                         }
 
