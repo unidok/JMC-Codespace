@@ -124,25 +124,32 @@ object Handlers {
 
                 delay(2 * partDelayMillis)
 
-                runInMainThread {
-                    val vec = pos.subtract(player.position())
-                    val delta = vec.lengthSqr()
-                    if (delta > 0 && delta < 1) player.move(MoverType.SELF, vec)
-                    player.yRot = -90f
-                    player.xRot = 45f
-                    inventory.selectedSlot = 0
-                    connection.send(ServerboundMovePlayerPacket.Rot(-90f, 45f, true, true))
-                    connection.send(ServerboundPickItemFromBlockPacket(blockPos, false))
+                var handler: String? = null
+                var attempts = 0
+
+                while (handler == null && attempts++ != 3 && isActive()) {
+                    runInMainThread {
+                        val vec = pos.subtract(player.position())
+                        val delta = vec.lengthSqr()
+                        if (delta > 0 && delta < 1) player.move(MoverType.SELF, vec)
+                        player.yRot = -90f
+                        player.xRot = 45f
+                        inventory.selectedSlot = 0
+                        connection.send(ServerboundMovePlayerPacket.Rot(-90f, 45f, true, true))
+                        connection.send(ServerboundPickItemFromBlockPacket(blockPos, false))
+                    }
+                    delay(3 * partDelayMillis)
+                    handler = runInMainThreadSuspend {
+                        Templates.getCodeJson(Templates.getCodeRaw(inventory.getItem(0)))
+                    }
+                    if (handler != null) {
+                        handlers.add(handler.replaceFirst("\"position\":0", "\"position\":$index"))
+                        break
+                    }
                 }
 
-                delay(3 * partDelayMillis)
-
-                val handler = runInMainThreadSuspend {
-                    Templates.getCodeJson(Templates.getCodeRaw(inventory.getItem(0)))
-                }
-
-                if (handler != null) {
-                    handlers.add(handler.replaceFirst("\"position\":0", "\"position\":$index"))
+                if (handler == null) {
+                    sendMessageFromCodespace(Text.literal("Не удалось сохранить строку №$index").style(color = JustColor.RED))
                 }
 
                 if (++index == amount) break
