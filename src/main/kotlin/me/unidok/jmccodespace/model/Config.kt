@@ -10,5 +10,6 @@ class Config(
     val defaultFileName: String,
     val indexingLimitX: Int,
     val indexingLimitY: Int,
-    val modulesDirectory: String
+    val modulesDirectory: String,
+    val maxSaveHandlerAttempts: Int
 )

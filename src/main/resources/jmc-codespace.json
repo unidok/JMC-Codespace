@@ -5,5 +5,6 @@
   "defaultFileName": "world_%id%-%day%.%month%.%year%",
   "indexingLimitX": 6,
   "indexingLimitY": 15,
-  "modulesDirectory": "%default%"
+  "modulesDirectory": "%default%",
+  "maxSaveHandlerAttempts": 5
 }

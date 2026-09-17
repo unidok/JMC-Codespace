@@ -52,7 +52,7 @@ object NavigationByKeys {
                                 val pos = founded[0].pos
                                 client.connection?.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z + 1}")
                             } else {
-                                connection.sendCommand("editor usages function $name")
+                                connection.sendCommand("editor find usage function $name")
                             }
                         }
 
@@ -63,7 +63,7 @@ object NavigationByKeys {
                                 val pos = founded[0].pos
                                 connection.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z + 1}")
                             } else {
-                                connection.sendCommand("editor usages process $name")
+                                connection.sendCommand("editor find usage process $name")
                             }
                         }
 
@@ -72,7 +72,7 @@ object NavigationByKeys {
                             if (name.isEmpty()) {
                                 Codespace.performSearch(world, block.getFullName(true), originBlock)
                             } else {
-                                connection.sendCommand("editor tp function $name")
+                                connection.sendCommand("editor find function $name")
                             }
                         }
 
@@ -81,7 +81,7 @@ object NavigationByKeys {
                             if (name.isEmpty()) {
                                 Codespace.performSearch(world, block.getFullName(true), originBlock)
                             } else {
-                                connection.sendCommand("editor tp process $name")
+                                connection.sendCommand("editor find process $name")
                             }
                         }
 

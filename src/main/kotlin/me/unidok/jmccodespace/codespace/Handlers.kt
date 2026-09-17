@@ -86,6 +86,7 @@ object Handlers {
         var index = 0
         val amount = triggerBlocks.size
         val handlers = ArrayList<String>(amount)
+        val maxAttempts = JMCCodespace.config.maxSaveHandlerAttempts
         val delayMillis = JMCCodespace.config.savingPeriod * 50L
         val partDelayMillis = delayMillis / 5 // Делится без остатка
         val fileName = (name ?: JMCCodespace.getModuleFileName(world)) + ".json"
@@ -127,7 +128,7 @@ object Handlers {
                 var handler: String? = null
                 var attempts = 0
 
-                while (handler == null && attempts++ != 3 && isActive()) {
+                while (handler == null && attempts++ != maxAttempts && isActive()) {
                     runInMainThread {
                         val vec = pos.subtract(player.position())
                         val delta = vec.lengthSqr()
