@@ -27,6 +27,7 @@ object SignTranslator {
         }
 
         for (key in properties.stringPropertyNames()) {
+            if (key.length < 17) continue
             val word = key.substring(14, 17)
             val begin = if (word == "cat") 23 else if (word == "tri") 22 else if (word == "act") 21 else continue
             if (!key.endsWith("name")) continue

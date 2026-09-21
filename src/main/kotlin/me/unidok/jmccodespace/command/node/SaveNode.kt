@@ -46,10 +46,10 @@ object SaveNode {
                 runs {
                     CodespaceCommand.checkPlayerInEditor()
                     if (!Handlers.stopSaving()) throw exception.create()
-                    val gui = Minecraft.getInstance().gui
-                    gui.setTitle(Text.literal("Отменено").style(color = Color.RED))
-                    gui.setSubtitle(Text.empty())
-                    gui.setTimes(0, 20, 5)
+                    val hud = Minecraft.getInstance().gui.hud
+                    hud.setTitle(Text.literal("Отменено").style(color = Color.RED))
+                    hud.setSubtitle(Text.empty())
+                    hud.setTimes(0, 20, 5)
                 }
             }
         }

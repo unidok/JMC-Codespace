@@ -81,7 +81,7 @@ object Handlers {
         }
 
         val connection = client.connection ?: return
-        val gui = client.gui
+        val hud = client.gui.hud
         val inventory = player.inventory
         var index = 0
         val amount = triggerBlocks.size
@@ -109,13 +109,13 @@ object Handlers {
                 val pos = Vec3(2.85, blockPos.y.toDouble(), blockPos.z + 0.5)
 
                 runInMainThread {
-                    gui.setTitle(Text.literal("${(index + 1) * 100 / amount}%").withStyle(ChatFormatting.GREEN))
-                    gui.setSubtitle(Text.literal("%d/%d (~ %.2f s)".format(
+                    hud.setTitle(Text.literal("${(index + 1) * 100 / amount}%").withStyle(ChatFormatting.GREEN))
+                    hud.setSubtitle(Text.literal("%d/%d (~ %.2f s)".format(
                         index + 1,
                         amount,
                         (amount - index) * delayMillis / 1000f
                     )))
-                    gui.setTimes(0, delayMillis.toInt(), 3)
+                    hud.setTimes(0, delayMillis.toInt(), 3)
                     inventory.setItem(0, ItemStack.EMPTY)
                     connection.updateItemInInventory(0, ItemStack.EMPTY)
                     connection.sendCommand("editor tp ${pos.x} ${pos.y} ${pos.z}")
@@ -171,9 +171,9 @@ object Handlers {
 
                     if (upload) {
                         runInMainThread {
-                            gui.setTitle(Text.literal("Загрузка на сервер..."))
-                            gui.setSubtitle(Text.empty())
-                            gui.setTimes(0, 300, 3)
+                            hud.setTitle(Text.literal("Загрузка на сервер..."))
+                            hud.setSubtitle(Text.empty())
+                            hud.setTimes(0, 300, 3)
                         }
                         try {
                             val url = upload(result)
@@ -199,9 +199,9 @@ object Handlers {
 
                     runInMainThread {
                         val time = "%.2f".format((System.currentTimeMillis() - startTime) / 1000f)
-                        gui.setTitle(Text.literal("Сохранено!").withStyle(ChatFormatting.GREEN))
-                        gui.setSubtitle(Text.literal("Время: $time секунд"))
-                        gui.setTimes(0, 20, 5)
+                        hud.setTitle(Text.literal("Сохранено!").withStyle(ChatFormatting.GREEN))
+                        hud.setSubtitle(Text.literal("Время: $time секунд"))
+                        hud.setTimes(0, 20, 5)
                         player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1f, 1f)
                         sendMessageFromCodespace(Text.literal("Сохранение кода завершено. ($time сек.)").style(color = JustColor.GREEN))
                     }

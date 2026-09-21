@@ -27,7 +27,7 @@ object NavigationByKeys {
             if (!Codespace.isEditor(world)) return@register
             val connection = client.connection ?: return@register
 
-            if (client.screen == null && client.options.keyShift.isDown) {
+            if (client.gui.screen() == null && client.options.keyShift.isDown) {
                 val result = player.pick(5.0, 0f, false) as? BlockHitResult ?: return@register
                 val pos = result.blockPos
 

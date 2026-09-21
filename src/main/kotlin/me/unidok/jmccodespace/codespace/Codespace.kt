@@ -6,7 +6,7 @@ import kotlinx.coroutines.launch
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.model.CodeBlock
 import me.unidok.jmccodespace.util.*
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.network.chat.ClickEvent
@@ -37,7 +37,7 @@ object Codespace {
 
     fun playerInEditor(): Boolean = isEditor(Minecraft.getInstance().level)
 
-    fun registerIndexer() = ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register { client, world ->
+    fun registerIndexer() = ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register { client, world ->
         if (isEditor(world)) {
             currentIndexJob?.cancel()
             currentIndexJob = AsyncScope.launch {

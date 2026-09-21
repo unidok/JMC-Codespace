@@ -12,7 +12,7 @@ fun ClientPacketListener.updateItemInInventory(slot: Int, item: ItemStack) {
 
 fun sendMessage(text: Text) {
     runInMainThread {
-        Minecraft.getInstance().chatListener.handleSystemMessage(text, false)
+        Minecraft.getInstance().gui.chatListener().handleSystemMessage(text, false)
     }
 }
 
