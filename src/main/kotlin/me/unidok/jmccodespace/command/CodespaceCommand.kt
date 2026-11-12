@@ -2,7 +2,7 @@ package me.unidok.jmccodespace.command
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import me.unidok.clientcommandextensions.ClientCommand
+import me.unidok.command.ClientCommand
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.codespace.Codespace
 import me.unidok.jmccodespace.command.node.*
@@ -16,7 +16,6 @@ object CodespaceCommand : ClientCommand("codespace", JMCCodespace.config.shortCo
         ClearNode.apply(command)
         SaveNode.apply(command)
         ModulesNode.apply(command)
-        SearchNode.apply(command)
         ConfigNode.apply(command)
         TemplateNode.apply(command)
     }

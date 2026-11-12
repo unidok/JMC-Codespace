@@ -7,10 +7,10 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import me.unidok.clientcommandextensions.argument
-import me.unidok.clientcommandextensions.getArgument
-import me.unidok.clientcommandextensions.literal
-import me.unidok.clientcommandextensions.runs
+import me.unidok.command.argument
+import me.unidok.command.getArgument
+import me.unidok.command.literal
+import me.unidok.command.runs
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.template.Compressor
 import me.unidok.jmccodespace.template.Templates

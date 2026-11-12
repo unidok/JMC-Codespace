@@ -20,7 +20,7 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:${property("loader_version")}")
     implementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     implementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
-    implementation(files("libs/ClientCommandExtensions-1.4.jar"))
+    implementation(files("libs/CommandExtensions-1.5.jar"))
 }
 
 kotlin {

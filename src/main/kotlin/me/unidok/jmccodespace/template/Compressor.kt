@@ -15,7 +15,7 @@ object Compressor {
 
         val compressedDataLength = compressor.deflate(output)
 
-        return Base64.getEncoder().encodeToString(output.copyOfRange(0, compressedDataLength))
+        return Base64.getEncoder().encodeToString(output.copyOf(compressedDataLength))
     }
 
     fun decompress(input: String): String {

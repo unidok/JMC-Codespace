@@ -3,7 +3,7 @@
 	"id": "jmc-codespace",
 	"version": "${mod_version}",
 	"name": "JustMC Codespace",
-	"description": "Утилиты для кодинга на JustMC Creative+.",
+	"description": "Локальное управление модулями на JustMC Creative+.",
 	"icon": "assets/icon.png",
 	"license": "MIT",
 	"authors": [

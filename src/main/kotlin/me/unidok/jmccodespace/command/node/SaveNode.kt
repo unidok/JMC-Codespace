@@ -3,10 +3,10 @@ package me.unidok.jmccodespace.command.node
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import me.unidok.clientcommandextensions.argument
-import me.unidok.clientcommandextensions.getArgument
-import me.unidok.clientcommandextensions.literal
-import me.unidok.clientcommandextensions.runs
+import me.unidok.command.argument
+import me.unidok.command.getArgument
+import me.unidok.command.literal
+import me.unidok.command.runs
 import me.unidok.jmccodespace.JMCCodespace
 import me.unidok.jmccodespace.codespace.Handlers
 import me.unidok.jmccodespace.command.CodespaceCommand

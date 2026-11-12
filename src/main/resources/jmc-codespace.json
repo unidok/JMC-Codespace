@@ -1,10 +1,12 @@
 {
-  "localizationFile": "https://gitlab.com/justmc/justmc-localization/-/raw/master/creative_plus/ru_RU.properties",
+  "emptyModuleUrl": "https://raw.githubusercontent.com/unidok/modules/main/empty.json",
+  "downloadUrl": "http://api.creative.justmc.io/public/creative/handlers/",
+  "useDownload": true,
   "shortCommand": "csp",
   "savingPeriod": 25,
-  "defaultFileName": "world_%id%-%day%.%month%.%year%",
-  "indexingLimitX": 6,
-  "indexingLimitY": 15,
-  "modulesDirectory": "%default%",
-  "maxSaveHandlerAttempts": 5
+  "defaultFileName": "world_%id%/%day%.%month%.%year%",
+  "uploader": "brewpage",
+  "modulesDirectory": "./config/jmc-codespace/saved",
+  "maxSaveHandlerAttempts": 5,
+  "linesAtFloor": 35
 }

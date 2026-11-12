@@ -1,19 +1,9 @@
 package me.unidok.jmccodespace.util
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
-import me.unidok.jmccodespace.JMCCodespace
+import kotlinx.coroutines.suspendCancellableCoroutine
 import net.minecraft.client.Minecraft
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
-
-object AsyncScope : CoroutineScope {
-    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
-    override val coroutineContext = newSingleThreadContext(JMCCodespace.MOD_ID)
-}
 
 fun runInMainThread(block: () -> Unit) {
     val client = Minecraft.getInstance()
@@ -21,7 +11,7 @@ fun runInMainThread(block: () -> Unit) {
     client.execute(block)
 }
 
-suspend fun <T> runInMainThreadSuspend(block: () -> T): T = suspendCoroutine { cont ->
+suspend fun <T> runInMainThreadSuspend(block: () -> T): T = suspendCancellableCoroutine { cont ->
     runInMainThread {
         try {
             cont.resume(block())

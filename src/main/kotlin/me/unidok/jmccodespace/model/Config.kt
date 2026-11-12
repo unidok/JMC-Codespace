@@ -4,12 +4,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class Config(
-    val localizationFile: String,
+    val emptyModuleUrl: String,
+    val downloadUrl: String,
+    var useDownload: Boolean,
     val shortCommand: String,
     var savingPeriod: Int,
     val defaultFileName: String,
-    val indexingLimitX: Int,
-    val indexingLimitY: Int,
-    val modulesDirectory: String,
-    val maxSaveHandlerAttempts: Int
+    var uploader: String,
+    var modulesDirectory: String,
+    val maxSaveHandlerAttempts: Int,
+    val linesAtFloor: Int,
 )
