@@ -186,7 +186,7 @@ object Handlers : ClientReceiveMessageEvents.Game, ClientLevelEvents.AfterClient
                         ))
                     }
                 }
-                sendMessageFromCodespace(Text.literal("Не удалось скачать код через /editor download").withColor(JustColor.RED))
+                sendMessageFromCodespace(Text.literal("Не удалось скачать код через /editor download. Отключить это можно при помощи /${JMCCodespace.config.shortCommand} config useDownload false").withColor(JustColor.RED))
                 sendMessageFromCodespace(Text.literal("Запуск обычного сохранения..."))
             }
             val handlers = SaveResult() // Частичный результат, который даёт save()

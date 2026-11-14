@@ -3,10 +3,11 @@ package me.unidok.jmccodespace.command
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.context.CommandContext
-import com.mojang.brigadier.suggestion.SuggestionProvider
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import kotlinx.coroutines.async
+import kotlinx.coroutines.future.asCompletableFuture
+import me.unidok.jmccodespace.JMCCodespace
 import java.io.File
 import java.util.concurrent.CompletableFuture
 
@@ -23,7 +24,7 @@ import java.util.concurrent.CompletableFuture
  */
 class PathArgumentType(
     private val root: (() -> File)? = null
-) : ArgumentType<String>, SuggestionProvider<FabricClientCommandSource> {
+) : ArgumentType<String> {
     override fun parse(reader: StringReader): String {
         // Принудительно читаем весь остаток строки, игнорируя правила unquoted-строк
         val start = reader.cursor
@@ -38,10 +39,10 @@ class PathArgumentType(
         return normalizeSeparators(unquoted)
     }
 
-    override fun getSuggestions(
-        context: CommandContext<FabricClientCommandSource>,
+    override fun <S> listSuggestions(
+        context: CommandContext<S>,
         builder: SuggestionsBuilder
-    ): CompletableFuture<Suggestions> {
+    ): CompletableFuture<Suggestions> = JMCCodespace.scope.async {
         // Снимаем ведущую кавычку (вставка из проводника), но в suggestion
         // кавычки не включаем: brigadier заменит remaining целиком, путь
         // останется валидным; клиент сам обернёт в кавычки, если появятся пробелы.
@@ -78,18 +79,18 @@ class PathArgumentType(
             relativePart = prefix
         }
 
-        if (!baseDir.isDirectory) return builder.buildFuture()
+        if (!baseDir.isDirectory) return@async builder.build()
 
-        val entries = baseDir.listFiles() ?: return builder.buildFuture()
+        val entries = baseDir.listFiles() ?: return@async builder.build()
 
-        for (entry in entries.sortedBy { it.name.lowercase() }) {
+        for (entry in entries) {
             val name = entry.name
-            if (!name.startsWith(relativePart, ignoreCase = true)) continue
+            if (!name.contains(relativePart, ignoreCase = true)) continue
             builder.suggest(absolutePrefix + name)
         }
 
-        return builder.buildFuture()
-    }
+        builder.build()
+    }.asCompletableFuture()
 
     private fun normalizeSeparators(path: String): String = path.replace('\\', '/')
 }

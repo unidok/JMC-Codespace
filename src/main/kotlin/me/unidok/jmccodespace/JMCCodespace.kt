@@ -26,7 +26,6 @@ import net.minecraft.world.level.Level
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.InputStream
 import java.net.http.HttpClient
 import kotlin.time.Clock
 
@@ -42,7 +41,10 @@ class JMCCodespace : ClientModInitializer {
     }
 
     companion object {
-        private val json = Json { prettyPrint = true }
+        private val json = Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
         const val MOD_ID = "jmc-codespace"
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val logger: Logger = LoggerFactory.getLogger(MOD_ID)
@@ -77,7 +79,7 @@ class JMCCodespace : ClientModInitializer {
         fun getUploader(name: String): ModuleUploader? = uploaders[name]
 
         fun getUploader(): ModuleUploader =
-            getUploader(config.uploader) ?: JustMCUploader
+            getUploader(config.uploader) ?: BrewPageUploader
 
         fun getUploaders(): Map<String, ModuleUploader> = uploaders
 
@@ -97,14 +99,14 @@ class JMCCodespace : ClientModInitializer {
                 directory.mkdirs()
 
                 if (configFile.createNewFile()) {
-                    configFile.writeBytes(getDefaultConfig().readBytes())
+                    configFile.writeText(json.encodeToString(Config()))
                 }
 
                 config = runCatching {
                     json.decodeFromStream<Config>(configFile.inputStream())
                 }.getOrElse { e ->
                     logger.warn("Could not load config.json:\n$e")
-                    json.decodeFromStream<Config>(getDefaultConfig())
+                    Config()
                 }
 
                 setModulesDir(config.modulesDirectory)
@@ -120,10 +122,6 @@ class JMCCodespace : ClientModInitializer {
         fun resetConfig() {
             configFile.delete()
             loadConfig()
-        }
-
-        fun getDefaultConfig(): InputStream {
-            return JMCCodespace::class.java.classLoader.getResourceAsStream("jmc-codespace.json")!!
         }
     }
 }
